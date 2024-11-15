@@ -339,6 +339,68 @@ models = {
     "AdaBoost": AdaBoostClassifier(),
     "XGBoost": XGBClassifier()
 }
+
+from sklearn.model_selection import GridSearchCV
+
+# 定义参数网格
+param_grids = {
+    "Logistic Regression": {
+        'C': [0.01, 0.1, 1, 10, 100],
+        'solver': ['newton-cg', 'lbfgs', 'liblinear']
+    },
+    "Random Forest": {
+        'n_estimators': [100, 200, 300],
+        'max_depth': [None, 10, 20, 30],
+        'min_samples_split': [2, 5, 10]
+    },
+    "SVM": {
+        'C': [0.1, 1, 10, 100],
+        'gamma': [1, 0.1, 0.01, 0.001],
+        'kernel': ['rbf', 'linear']
+    },
+    "Decision Tree": {
+        'max_depth': [None, 10, 20, 30],
+        'min_samples_split': [2, 5, 10]
+    },
+    "K-Nearest Neighbors": {
+        'n_neighbors': [3, 5, 7, 9],
+        'weights': ['uniform', 'distance']
+    },
+    "Gradient Boosting": {
+        'n_estimators': [100, 200, 300],
+        'learning_rate': [0.01, 0.1, 0.2],
+        'max_depth': [3, 5, 7]
+    },
+    "Neural Networks": {
+        'hidden_layer_sizes': [(50,), (100,), (50, 50)],
+        'activation': ['tanh', 'relu'],
+        'solver': ['sgd', 'adam'],
+        'alpha': [0.0001, 0.001, 0.01]
+    },
+    "Naive Bayes": {
+        'var_smoothing': [1e-9, 1e-8, 1e-7]
+    },
+    "AdaBoost": {
+        'n_estimators': [50, 100, 200],
+        'learning_rate': [0.01, 0.1, 1]
+    },
+    "XGBoost": {
+        'n_estimators': [100, 200, 300],
+        'learning_rate': [0.01, 0.1, 0.2],
+        'max_depth': [3, 5, 7]
+    }
+}
+
+# 优化每个模型的参数 --this part cost a lot of time, should skip when debug.
+best_models = {}
+for name, model in models.items():
+    print(f"Optimizing {name}...")
+    grid_search = GridSearchCV(estimator=model, param_grid=param_grids[name], cv=5, scoring='accuracy')
+    grid_search.fit(X_train, y_train)
+    best_models[name] = grid_search.best_estimator_
+    print(f"Best parameters for {name}: {grid_search.best_params_}")
+
+
 feature_importances = pd.DataFrame(index=selected_features)
 
 # 创建一个空的DataFrame来保存结果
@@ -381,7 +443,7 @@ calibration_data2 = []
 calibration_data3 = []
 
 # 对于每个模型，训练并评估它
-for name, model in models.items():
+for name, model in best_models.items():
     
     ################## start cross_validate
     scores = cross_validate(model, X_train, y_train, cv=5, scoring=scoring)  # 5折交叉验证
